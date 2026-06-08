@@ -35,15 +35,22 @@ User Query
 
 customer-support-copilot/
 
-├── app.py
+├── chatbot.py
 
-├── create_db.py
+├── create_data.py
 
 ├── .env
+
+├── .gitignore
 
 ├── data/
 
 │ └── faq.txt
+│ └── return_policy.txt
+│ └── shipping_policy.txt
+│ └── warranty_policy.txt
+│ └── product_manuel.pdf
+│ └── user_guide.pdf 
 
 ├── vectordb/
 
@@ -97,13 +104,13 @@ GROQ_API_KEY=your_api_key_here
 ## Create Vector Database
 
 ```bash
-python create_db.py
+python create_data.py
 ```
 
 ## Run Application
 
 ```bash
-streamlit run app.py
+streamlit run chatbot.py
 ```
 
 ## Sample Questions
@@ -111,7 +118,7 @@ streamlit run app.py
 * How long does shipping take?
 * Can customers return products?
 * How can I track my order?
-* What should I do if my payment fails?
+* How to reset password?
 
 ## Future Enhancements
 
@@ -123,10 +130,5 @@ streamlit run app.py
 * Analytics Dashboard
 * Cloud Deployment
 
-## Resume Highlights
-
-* Developed a RAG-based customer support assistant to answer queries from FAQ and knowledge-base documents.
-* Implemented semantic search using HuggingFace embeddings and FAISS for accurate context retrieval.
-* Built a Streamlit-based conversational interface for real-time question answering.
 
 

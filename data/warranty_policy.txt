@@ -1,4 +1,19 @@
-Electronics include manufacturer warranty.
-Warranty duration varies by product.
-Physical damage is not covered.
-Warranty claims must be submitted through authorized service centers.
+WARRANTY POLICY
+
+SmartDesk Pro is provided as a Software-as-a-Service (SaaS) platform.
+
+The company guarantees:
+
+- 99.9% monthly uptime.
+- Secure storage of customer data.
+- Continuous security updates.
+- Bug fixes for reported software defects.
+
+The warranty does not cover:
+
+- Third-party integration failures.
+- Customer configuration errors.
+- Internet connectivity issues.
+- Unauthorized modifications.
+
+Critical issues will receive priority support and resolution.
