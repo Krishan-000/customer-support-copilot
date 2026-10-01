@@ -5,55 +5,46 @@ from dotenv import load_dotenv
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
-from langchain.chains import RetrievalQA
-
+from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_groq import ChatGroq
-
-from langchain.chains import ConversationalRetrievalChain
-from langchain.memory import ConversationBufferMemory
-
-load_dotenv()
-
-
-embeddings = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
-
-
-db = FAISS.load_local(
-    "vectordb",
-    embeddings,
-    allow_dangerous_deserialization=True
-)
-
-retriever = db.as_retriever(
-    search_kwargs={"k": 3}
-)
-
-
-llm = ChatGroq(
-    model="openai/gpt-oss-120b",
-    temperature=0
-)
-
-memory = ConversationBufferMemory(
-    memory_key="chat_history",
-    return_messages=True,
-    output_key="answer"
-)
-
-
-qa_chain = ConversationalRetrievalChain.from_llm(
-    llm=llm,
-    retriever=retriever,
-    memory=memory,
-    return_source_documents=True
-)
 
 st.set_page_config(
     page_title="Customer Support Copilot",
     page_icon="🤖"
 )
+
+load_dotenv()
+
+answer_prompt = ChatPromptTemplate.from_messages([
+    (
+        "system",
+        "You are a customer support assistant. Answer using the retrieved "
+        "context as the source of truth. If the context does not contain the "
+        "answer, say you do not know and suggest contacting support. Be concise.\n\n"
+        "Retrieved context:\n{context}"
+    ),
+    MessagesPlaceholder("chat_history"),
+    ("human", "{question}")
+])
+
+
+@st.cache_resource(show_spinner="Loading support resources...")
+def load_resources():
+    embeddings = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
+    db = FAISS.load_local(
+        "vectordb",
+        embeddings,
+        allow_dangerous_deserialization=True
+    )
+    retriever = db.as_retriever(search_kwargs={"k": 3})
+    llm = ChatGroq(
+        model="openai/gpt-oss-120b",
+        temperature=0
+    )
+    return retriever, llm
 
 
 st.title("🤖 Customer Support Copilot")
@@ -83,24 +74,37 @@ if query:
         }
     )
 
-    with st.spinner("Thinking..."):
+    retriever, llm = load_resources()
+    with st.spinner("Searching support resources..."):
+        source_documents = retriever.invoke(query)
 
-        result = qa_chain.invoke(
-            {
-                "question": query
-            }
-        )
+    context = "\n\n".join(
+        f"Source: {doc.metadata.get('source', 'knowledge base')}\n{doc.page_content}"
+        for doc in source_documents
+    )
+    chat_history = [
+        HumanMessage(content=message["content"])
+        if message["role"] == "user"
+        else AIMessage(content=message["content"])
+        for message in st.session_state.messages[:-1][-6:]
+    ]
+    prompt_messages = answer_prompt.format_messages(
+        context=context,
+        chat_history=chat_history,
+        question=query
+    )
 
-        answer = result["answer"]
-
-    
     with st.chat_message("assistant"):
-        st.markdown(answer)
+        answer = st.write_stream(
+            chunk.content
+            for chunk in llm.stream(prompt_messages)
+            if chunk.content
+        )
 
         with st.expander("Sources Used"):
 
             for i, doc in enumerate(
-                result["source_documents"],
+                source_documents,
                 start=1
             ):
                 st.markdown(f"### Source {i}")
